@@ -1,0 +1,249 @@
+---
+title: "Intro to hierarchical models"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(show.signif.stars = FALSE)
+library(tidyverse) 
+```
+
+
+## Why multilevel regression modeling?
+
+Consider a housing dataset that contains information about sales of 2000 houses across 100 different zipcodes.
+
+```{r}
+housing_sales <- read_csv('http://math.montana.edu/ahoegh/teaching/stat408/datasets/HousingSales.csv')
+```
+
+_Q:_ Do you expect to see the same relationship between the size of the home `Living_Sq_Ft` and the sales price for all cities? Note a few cities in this dataset include Lincoln, NE; Lewistown, MT; Miami, FL; Honolulu, HI; Snowmass, CO; and Flint, MI.
+
+\vfill
+
+So how should we model housing prices as a function of living space across these cities?
+\vfill
+
+One option would be to use the indicator notation that we previously discussed:
+
+$$Y_{i} = \beta_0 + \beta_1 I_{i \in zip(1)} + ... + beta_{100} I_{i\in zip(100)} + \epsilon_i$$
+where $Y_{i}$ is the sales price of home $i$ and $\epsilon_i \sim N(0, \sigma^2)$
+
+\vfill
+
+Sketch out the mean housing price by zipcode as a function of living space using this model. Does this seem like a reasonable model?
+
+\vfill
+
+\vfill
+\vfill
+
+\newpage
+
+```{r}
+housing_sales %>% filter(State %in% c("NE", "MT", "CO", 'HI','FL','MI')) %>%
+  mutate(sales_price = Closing_Price / 1000000, thousand_sq_ft = Living_Sq_Ft / 1000) %>% 
+  ggplot(aes(y = sales_price, x = thousand_sq_ft, color = State)) + 
+  geom_point() + geom_smooth(method = 'loess') + 
+  xlab('Living Space (1000 square feet)') + 
+  ylab('Sales Price (million dollars)') + facet_wrap(.~State) +
+  ggtitle('Housing prices vs. square footage for select states')
+```
+
+\vfill
+
+Another option would be to fit separate models for each zipcode. What are some of the implications for this type of model?
+
+\vfill
+1. Different slopes and different intercepts
+\vfill
+2. No information is shared across zipcodes
+\vfill
+3. No mechanism for making predictions for zipcodes not in the sample (assuming this is permissable within the scope of inference)
+\vfill
+
+\newpage
+
+A multilevel, or hierarchical model, contains another level that models the covariates from each individual level model.
+
+\vfill
+
+Thus rather than 
+$$Y_i = \alpha + \beta X_i + \epsilon_i,$$
+where $i = 1, ..., n$ corresponds to the n houses, the model can be written as
+\begin{eqnarray} Y_{i} &=& \alpha_{j[i]} + \beta_{j[i]} X_{i} + \epsilon_i\\
+\alpha_j &=& a_0 + b_0 u_j + \eta_{j1}\\
+\beta_j &=& a_1 + b_1 u_j + \eta_{j2}
+\end{eqnarray}
+
+where $j[i]$ denotes the zipcode containing the $i^{th}$ house. In this motivating dataset $i = 1, ..., 2000$ and $j = 1, ..., 100$. While $X_i$ corresponds to house level covariates, $u_j$ would be zipcode level covariates, and $\eta$ are independent error terms.
+\vfill
+
+### Terminology
+
+These multilevel or hierarchical models carry this designation for two reasons:
+
+1. There are multiple levels in the data structure. In this case, consider houses nested in zipcodes.
+\vfill
+2. The model also has multiple levels. 
+\vfill
+
+Multilevel models could also be applied for several layers...
+\vfill
+
+__About Mixed Models / Random Effects__ The authors intentionally avoid the term "random effects" and hence, mixed models. More on this later...
+\vfill
+
+GH include several interesting applications of hierarchical models from their own research. Read through these in Chapter 1.2.
+
+\vfill
+
+\newpage
+
+#### Motivations for using hierarchical models
+
+__Learn about treatment effects that may vary:__ Some variables may have different impacts across groups, hierarchical models provides a formal way to address these questions.
+
+\vfill
+
+__Use all of the data to perform inferences for groups with small sample size:__ The hierarchical model allows the group level values to be informed by both the data in that group _and_ the group level values from other groups. 
+
+\vfill
+
+__Prediction:__ Hierarchical models provide a natural way for making predictions for new observations in an existing group and even new observations in a new group.
+
+\vfill
+
+__Analysis of Structured Data:__ The hierarchical structure provides a natural way to model data with inherent structure. Furthermore, there are natural extensions for data with to repeated measures, longitudinal, spatial, temporal, or spatiotemporal structure.
+
+\vfill
+
+__More efficient inference for regression parameters:__ This provides an alternative between separate models with no pooling and one model with complete pooling. Think of this as a data-driven partial pooling procedure.
+
+\vfill
+
+__Including predictors at multiple levels__ The model we have previously discussed for housing prices would permit using covariates for both the house-level and the zipcode-level, something that is difficult or impossible to do what standard model specifications.
+
+\vfill
+
+__Getting the right standard error accurately accounting for uncertainty in prediction and estimation:__ Consider cases where there is correlation across groups. The book touches on election results... If Indiana votes for Trump, does that make it more likely that Ohio will too? Multilevel models also give natural uncertainty estimates for new groups.
+
+\vfill
+
+\newpage
+
+
+## Multilevel Models
+
+For multilevel models, observations fall into groups and coefficients can vary by the group.
+\vfill
+
+Assume there are $J$ groups and $j[i]$ denotes that observation $i$ falls into group $j$
+
+\vfill
+$$y_i = \alpha + \beta x_i + \epsilon_i$$
+__complete pooling__
+\vfill
+\begin{eqnarray*}
+y_{[1]i} &=& \alpha_1 + \beta_1 x_{[1]i} + \epsilon_i \\
+y_{[2]i} &=& \alpha_2 + \beta_2 x_{[2]i} + \epsilon_i \\
+&.&\\
+&.&\\
+&.&\\
+y_{[J]i} &=& \alpha_J + \beta_J x_{[J]i} + \epsilon_i
+\end{eqnarray*}
+__no pooling__
+
+\vfill
+$$y_i = \alpha_{j[i]} + \beta_{j[i]} x_i + \epsilon_i$$
+__partial pooling__
+\vfill
+
+#### Shrinkage Equation 
+Assume that the multilevel model only includes group averages, then the partial pooling estimate of the mean (or intercept) is
+
+$$\hat{\alpha}_j \approx \frac{\frac{n_j}{\sigma_y^2}\bar{y}_j + \frac{1}{\sigma^2_\alpha }\bar{y}_{all}}{\frac{n_j}{\sigma_y^2} + \frac{1}{\sigma^2_\alpha }}$$
+where $\sigma^2_y$ is the variance of the data and $\sigma^2_\alpha$ is the variance of the group-level averages.
+
+Thus the estimate value for a group is a weighted average from the data in that group and the overall data.
+
+The weights are:
+
+1. a function of the data variance and the number of observations in a group, and 
+
+2. function of the variance of the group level estimates.
+
+For each scenario, large variance corresponds to a lower weight on that component and smaller variance (high precision) corresponds to higher weights
+
+\newpage
+#### Correlation structure
+
+A common assumption in regression models is that the observations are independent. There are a few common data types that violate this assumption and can be addressed with hierarchical models.
+\vfill
+
+__Repeated Measurements:__ repeated measurements on persons (or units), thus the data observations are clustered.
+\vfill
+
+__Cross Sectional Data (Longitudinal/Time series):__ 
+Repeated measurements across time.
+
+\vfill
+
+#### "Fixed vs. Random"
+
+These type of models are commonly referred to as "mixed models" that include "fixed" and "random" effects.
+
+__Random Effects:__ the coefficients that vary (across groups) are often referred to as random effects. We will see a formal statistical distribution associated with these later on.
+
+\vfill
+
+__Fixed Effects:__ GH point out inconsistencies with this term. Fixed effects generally refer to coefficients that do not vary (say a parameter estimated across all groups). This could also apply to the separate models approach. The defining feature is largely a probability distribution for model.
+
+\vfill
+Some general advice about when to use fixed/random effects focuses on the research goal; however, GH suggest _always_ using multilevel models.
+
+\vfill
+Furthermore, given the inconsistencies in the meaning of fixed/random, GH (and I) prefer using multilevel or hierarchical models.
+
+\newpage
+
+#### Multilevel Modeling Pros and Cons
+
+##### Classical Regression Overview
+
+- prediction for continuous or discrete outcomes
+\vfill
+
+- fitting of nonlinear relationships (using transformations and basis functions)
+\vfill
+
+- inclusion of categorical predictors using indicator functions
+\vfill
+
+- interactions between inputs
+\vfill
+
+- GLM frameworks for non-Gaussian (normal) probability distributions
+\vfill
+
+
+##### Multilevel Modeling
+
+- Accounting for and estimating individual- and group-level variation by estimating group-level coefficients (and potentially including group-level covariates.
+\vfill
+
+
+- Modeling variation among individual-level regression coefficients and making predictions for new individuals/groups.
+\vfill
+
+
+- Note there is extra complexity in fitting a multilevel model and additional modeling assumptions.
+\vfill
+
+
+- Limiting cases of multilevel models
+
+    - very little group variation, then the multilevel model approaches the complete pooling scenario
+    - very large group variation, then the multilevel model approaches the seperate model solution

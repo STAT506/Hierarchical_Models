@@ -1,0 +1,235 @@
+---
+title: "Intro to hierarchical models"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(show.signif.stars = FALSE)
+library(tidyverse) 
+```
+
+
+## Why multilevel regression modeling?
+
+Consider a housing dataset that contains information about sales of 2000 houses across 100 different zipcodes.
+
+```{r}
+housing_sales <- read_csv('http://math.montana.edu/ahoegh/teaching/stat408/datasets/HousingSales.csv')
+```
+
+_Q:_ Do you expect to see the same relationship between the size of the home `Living_Sq_Ft` and the sales price for all cities? Note a few cities in this dataset include Lincoln, NE; Lewistown, MT; Miami, FL; Honolulu, HI; Snowmass, CO; and Flint, MI.
+
+\vfill
+
+
+\vfill
+
+\vfill
+
+\vfill
+
+\vfill
+\vfill
+
+\vfill
+\vfill
+
+\newpage
+
+```{r}
+housing_sales %>% filter(State %in% c("NE", "MT", "CO", 'HI','FL','MI')) %>%
+  mutate(sales_price = Closing_Price / 1000000, thousand_sq_ft = Living_Sq_Ft / 1000) %>% 
+  ggplot(aes(y = sales_price, x = thousand_sq_ft, color = State)) + 
+  geom_point() + geom_smooth(method = 'loess') + 
+  xlab('Living Space (1000 square feet)') + 
+  ylab('Sales Price (million dollars)') + facet_wrap(.~State) +
+  ggtitle('Housing prices vs. square footage for select states')
+```
+
+\vfill
+
+Another option would be to fit separate models for each zipcode. What are some of the implications for this type of model?
+
+\vfill
+\vfill
+
+\vfill
+\vfill
+
+\newpage
+
+A multilevel, or hierarchical model, contains another level that models the covariates from each individual level model.
+
+\vfill
+
+Thus rather than 
+$$Y_i = \alpha + \beta X_i + \epsilon_i,$$
+where $i = 1, ..., n$ corresponds to the n houses, the model can be written as
+\vfill
+\vfill
+\vfill
+\vfill
+
+### Terminology
+
+These multilevel or hierarchical models carry this designation for two reasons:
+
+1. There are multiple levels in the data structure. In this case, consider houses nested in zipcodes.
+\vfill
+2. The model also has multiple levels. 
+\vfill
+
+Multilevel models could also be applied for several layers...
+\vfill
+
+__About Mixed Models / Random Effects__ The authors intentionally avoid the term "random effects" and hence, mixed models. More on this later...
+\vfill
+
+GH include several interesting applications of hierarchical models from their own research. Read through these in Chapter 1.2.
+
+\vfill
+
+\newpage
+
+#### Motivations for using hierarchical models
+
+__Learn about treatment effects that may vary:__ 
+
+\vfill
+
+__Use all of the data to perform inferences for groups with small sample size:__ 
+
+\vfill
+
+__Prediction:__ 
+
+\vfill
+
+__Analysis of Structured Data:__ 
+
+
+\vfill
+
+__More efficient inference for regression parameters:__ 
+
+\vfill
+
+__Including predictors at multiple levels__ 
+
+
+\vfill
+
+__Getting the right standard error accurately accounting for uncertainty in prediction and estimation:__ 
+
+
+\vfill
+
+\newpage
+
+
+## Multilevel Models
+
+For multilevel models, observations fall into groups and coefficients can vary by the group.
+\vfill
+
+Assume there are $J$ groups and $j[i]$ denotes that observation $i$ falls into group $j$
+
+\vfill
+$$y_i = \alpha + \beta x_i + \epsilon_i$$
+
+\vfill
+\begin{eqnarray*}
+y_{[1]i} &=& \alpha_1 + \beta_1 x_{[1]i} + \epsilon_i \\
+y_{[2]i} &=& \alpha_2 + \beta_2 x_{[2]i} + \epsilon_i \\
+&.&\\
+&.&\\
+&.&\\
+y_{[J]i} &=& \alpha_J + \beta_J x_{[J]i} + \epsilon_i
+\end{eqnarray*}
+
+
+\vfill
+$$y_i = \alpha_{j[i]} + \beta_{j[i]} x_i + \epsilon_i$$
+
+\vfill
+
+#### Shrinkage Equation 
+Assume that the multilevel model only includes group averages, then the partial pooling estimate of the mean (or intercept) is
+
+\vfill
+
+
+Thus the estimate value for a group is a weighted average from the data in that group and the overall data.
+
+The weights are:
+
+
+\vfill
+
+
+\newpage
+#### Correlation structure
+
+A common assumption in regression models is that the observations are independent. There are a few common data types that violate this assumption and can be addressed with hierarchical models.
+\vfill
+
+__Repeated Measurements:__ 
+
+\vfill
+
+__Cross Sectional Data (Longitudinal/Time series):__ 
+
+
+\vfill
+
+#### "Fixed vs. Random"
+
+These type of models are commonly referred to as "mixed models" that include "fixed" and "random" effects.
+
+__Random Effects:__ 
+
+\vfill
+
+__Fixed Effects:__ 
+
+
+\vfill
+Some general advice about when to use fixed/random effects focuses on the research goal; however, GH suggest _always_ using multilevel models.
+
+\vfill
+Furthermore, given the inconsistencies in the meaning of fixed/random, GH (and I) prefer using multilevel or hierarchical models.
+
+\newpage
+
+#### Multilevel Modeling Pros and Cons
+
+##### Classical Regression Overview
+
+\vfill
+
+
+\vfill
+
+
+\vfill
+
+\vfill
+
+
+\vfill
+
+
+##### Multilevel Modeling
+
+\vfill
+
+
+
+\vfill
+
+
+\vfill
+
+
